@@ -96,7 +96,7 @@ export default {
           formatter(params) {
             for (const x in params) {
               return `${params[x].name}：
-               满意率：${params[x].data.value};\n
+               满意度：${params[x].data.value};\n
                样本量：${params[x].data.sampleSize}`
             }
           },

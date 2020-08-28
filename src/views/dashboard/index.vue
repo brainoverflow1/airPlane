@@ -2,8 +2,8 @@
   <div class="dashboard-container">
     <el-form :inline="true" :model="form" class="demo-form-inline">
 
-      <el-form-item label="年">
-        <el-select v-model="form.year" multiple filterable placeholder="请选择区域">
+      <el-form-item label="年-月">
+        <el-select v-model="form.year" multiple filterable placeholder="请选择日期">
           <el-option
             v-for="item in options.year"
             :key="item"
@@ -12,18 +12,8 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="月">
-        <el-select v-model="form.month" multiple filterable placeholder="请选择区域">
-          <el-option
-            v-for="item in options.month"
-            :key="item"
-            :label="item"
-            :value="item"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item label="日">
-        <el-select v-model="form.day" multiple filterable placeholder="请选择区域">
+        <el-select v-model="form.day" multiple filterable placeholder="请选择日期">
           <el-option
             v-for="item in options.day"
             :key="item"
@@ -36,6 +26,16 @@
         <el-select v-model="form.airline" multiple filterable placeholder="请选择航班">
           <el-option
             v-for="item in options.airline"
+            :key="item"
+            :label="item"
+            :value="item"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="舱位">
+        <el-select v-model="form.month" multiple filterable placeholder="请选择舱位">
+          <el-option
+            v-for="item in options.month"
             :key="item"
             :label="item"
             :value="item"
@@ -83,7 +83,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="配餐代理人">
-        <el-select v-model="form.agent" multiple filterable placeholder="请选择区域">
+        <el-select v-model="form.agent" multiple filterable placeholder="请选择配餐代理人">
           <el-option
             v-for="item in options.agent"
             :key="item"
@@ -100,19 +100,19 @@
       <div class="chartContainerBlock">
         <line-chart :chart-data="month" />
       </div>
-      <div class="chartContainer">
-        <bar-chart :chart-data="total" title="餐饮满意率" />
+      <div class="chartContainerBlock">
+        <bar-chart :chart-data="total" class-name="totalChart" width="75%" title="餐饮满意率" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="total_fc" title="两舱餐饮满意率" />
+        <bar-chart :chart-data="total_fc" bar-color="#F56C6C" title="两舱餐饮满意率" />
       </div>
       <div class="chartContainer">
         <bar-chart :chart-data="total_y" title="经济舱餐饮满意率" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="foodCategoryFc" title="两舱餐别满意率" />
+        <bar-chart :chart-data="foodCategoryFc" bar-color="#F56C6C" title="两舱餐别满意率" />
       </div>
-      <div class="chartContainerBlock">
+      <div class="chartContainer">
         <bar-chart :chart-data="food_category_y" title="经济舱餐别满意率" />
       </div>
       <div class="chartContainer">
@@ -125,32 +125,8 @@
         <bar-chart :chart-data="sex" title="性别满意率" />
       </div>
     </div>
-    <el-table
-      v-if="false"
-      :data="tableData"
-      style="width: 100%"
-    >
-      <el-table-column
-        prop="date"
-        label="日期"
-        width="180"
-      />
-      <el-table-column
-        prop="airline"
-        label="航班号"
-        width="180"
-      />
-      <el-table-column
-        prop="arilineCN"
-        label="航程中文"
-        width="180"
-      />
-      <el-table-column
-        prop="outside"
-        label="餐食的外观意见"
-        width="180"
-      />
-    </el-table>
+    <div class="tableTitle">旅客评论</div>
+    <infiniteTable v-if="tableData&&tableData.list&&tableData.list.length>0" main-height="500px" :main-data="tableData" />
   </div>
 </template>
 
@@ -159,14 +135,17 @@ import { mapGetters } from 'vuex'
 import BarChart from './BarChart'
 import LineChart from './LineChart'
 import { getList, getOptions } from '@/api/main'
+import infiniteTable from './infiniteTable'
 export default {
   name: 'Dashboard',
   components: {
     BarChart,
-    LineChart
+    LineChart,
+    infiniteTable
   },
   data() {
     return {
+      tableData: {},
       allData: {},
       month: {},
       total: {},
@@ -231,29 +210,32 @@ export default {
     ])
   },
   created() {
-    this.getList()
     this.getOptions()
   },
   methods: {
     getOptions() {
       getOptions().then(res => {
         this.options = res
+        this.form.year = [this.options.year[0]]
+        this.onSubmit()
         console.log(res)
       })
     },
     getList(data) {
       getList(data).then(res => {
+        console.log('list::::::::::::::::::::::::::::', res)
         this.allData = res
-        this.month = this.allData.month
+        this.month = this.allData.month || []
         this.total = this.allData.total
         this.total_fc = this.allData.total_fc
-        this.total_y = this.allData.total_fc
+        this.total_y = this.allData.total_y
         this.foodCategoryFc = this.allData.food_category_fc
         this.food_category_y = this.allData.food_category_y
         this.purpose = this.allData.purpose
         this.card = this.allData.card
         this.sex = this.allData.sex
-        console.log(res)
+        this.tableData = {}
+        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData.opinion)))
       })
     },
     onSubmit() {
@@ -289,6 +271,16 @@ export default {
   }
   .chartContainerBlock{
     margin-left: 30px;
+    text-align: center;
     width: 90%;
+  }
+  .totalChart{
+    display: inline-block;
+  }
+  .tableTitle{
+    margin: 30px 0;
+    font-size: 20px;
+    color: #509FEF;
+    font-weight: bold;
   }
 </style>

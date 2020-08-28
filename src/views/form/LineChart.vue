@@ -26,7 +26,9 @@ export default {
     },
     chartData: {
       type: Object,
-      required: true
+      default() {
+        return {}
+      }
     }
   },
   data() {
@@ -70,7 +72,7 @@ export default {
         title: {
           left: 'center',
           bottom: 0,
-          text: '过去六个月满意率变化'
+          text: '过去四个季度满意度变化'
         },
         xAxis: {
           data: xAxisData.reverse(),
@@ -108,7 +110,7 @@ export default {
           formatter(params) {
             for (const x in params) {
               return `${params[x].name}：
-               满意率：${params[x].data.value};\n
+               满意度：${params[x].data.value};\n
                样本量：${params[x].data.sampleSize}`
             }
           },
@@ -124,7 +126,7 @@ export default {
         }],
         series: [
           {
-            name: '满意率',
+            name: '满意度',
             smooth: false,
             type: 'line',
             label: {

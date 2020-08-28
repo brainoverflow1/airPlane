@@ -11,6 +11,9 @@ import '@/styles/index.scss' // global css
 import App from './App'
 import store from './store'
 import router from './router'
+import elTableInfiniteScroll from 'el-table-infinite-scroll'
+
+Vue.use(elTableInfiniteScroll)
 
 import '@/icons' // icon
 import '@/permission' // permission control
