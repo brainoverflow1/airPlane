@@ -2,17 +2,31 @@
   <div class="dashboard-container">
     <el-form :inline="true" :model="form" class="demo-form-inline">
 
-      <el-form-item label="年">
-        <el-select v-model="form.year" multiple filterable placeholder="请选择日期">
+      <el-form-item v-for="option in options" :key="option.id" :label="option.name">
+        <el-select
+          v-if="option.id!=='content'"
+          v-model="form[option.id]"
+          :clearable="true"
+          multiple
+          filterable
+          :placeholder="option.placeholder"
+          @change="$forceUpdate()"
+        >
           <el-option
-            v-for="item in options.year"
+            v-for="item in option.data"
             :key="item"
             :label="item"
             :value="item"
           />
         </el-select>
+        <el-input
+          v-else
+          v-model="form[option.id]"
+          :clearable="true"
+          :placeholder="option.placeholder"
+        />
       </el-form-item>
-      <el-form-item label="航班号">
+      <!-- <el-form-item label="航班号">
         <el-select v-model="form.airline" multiple filterable placeholder="请选择航班">
           <el-option
             v-for="item in options.airline"
@@ -51,12 +65,18 @@
             :value="item"
           />
         </el-select>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="onSubmit">查询</el-button>
       </el-form-item>
     </el-form>
-    <div class="tableTitle">旅客评论</div>
+    <div v-if="positive_ratio&&positive_ratio.data" class="tableTitle1">{{ `${positive_ratio.name}：${positive_ratio.data.score} ` }}</div>
+
+    <div class="chartContainerBlock">
+      <line-chart v-if="allData.positive_ratio_trend&&allData.positive_ratio_trend.data" :title="allData.positive_ratio_trend.name" :chart-data="allData.positive_ratio_trend.data" />
+    </div>
+
+    <div class="tableTitle">{{ tableTitle }}</div>
     <infiniteTable v-if="tableData&&tableData.list&&tableData.list.length>0" ref="infiniteTable" main-height="500px" :main-data="tableData" />
   </div>
 </template>
@@ -65,40 +85,22 @@
 import { mapGetters } from 'vuex'
 import { getThirdList, getThirdOptions } from '@/api/main'
 import infiniteTable from './infiniteTable'
+import LineChart from './LineChart'
 export default {
   name: 'Dashboard',
   components: {
-    infiniteTable
+    infiniteTable,
+    LineChart
   },
   data() {
     return {
+      tableTitle: '',
       tableData: {},
       allData: {},
-
+      positive_ratio: {},
       form: {
-        day: '',
-        month: '',
-        year: '',
-        area: '',
-        class: '',
-        arilinecategory: '',
-        depart: '',
-        arrive: '',
-        airline: '',
-        agent: ''
       },
-      options: {
-        class: [],
-        agent: [],
-        airline: [],
-        area: [],
-        arilinecategory: [],
-        arrive: [],
-        day: [],
-        depart: [],
-        month: [],
-        year: []
-      }
+      options: []
     }
   },
   computed: {
@@ -113,7 +115,9 @@ export default {
     getOptions() {
       getThirdOptions().then(res => {
         this.options = res
-        this.form.year = [this.options.year[0]]
+        const data = this.options.filter(data => data.id === 'month')[0]
+        console.log(data)
+        this.form.month = [data.data[0]]
         this.onSubmit()
         console.log(res)
       })
@@ -121,16 +125,17 @@ export default {
     getList(data) {
       getThirdList(data).then(res => {
         this.allData = res
+        this.positive_ratio = this.allData.positive_ratio || { data: {}}
         this.tableData = {}
-
-        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData)))
+        this.tableTitle = this.allData.comment.name
+        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData.comment.data)))
         // this.tableData = { list: this.allData.o_comment }
       })
     },
     onSubmit() {
       const data = {}
       for (const item in this.form) {
-        data[item] = (this.form[item] && this.form[item].length > 0) ? this.form[item].join(',') : undefined
+        data[item] = (Array.isArray(this.form[item])) ? (this.form[item] && this.form[item].length > 0) ? this.form[item].join(',') : undefined : (this.form[item] || undefined)
       }
       this.getList(data)
       console.log(data)
@@ -167,6 +172,12 @@ export default {
   }
   .totalChart{
     display: inline-block;
+  }
+  .tableTitle1{
+    margin: 30px 0;
+    font-size: 36px;
+    color: #0ce216be;
+    font-weight: bold;
   }
   .tableTitle{
     margin: 30px 0;

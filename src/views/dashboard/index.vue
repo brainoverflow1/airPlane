@@ -1,8 +1,17 @@
 <template>
   <div class="dashboard-container">
     <el-form :inline="true" :model="form" class="demo-form-inline">
-
-      <el-form-item label="年-月">
+      <el-form-item v-for="option in options" :key="option.id" :label="option.name">
+        <el-select v-model="form[option.id]" :clearable="true" multiple filterable :placeholder="option.placeholder">
+          <el-option
+            v-for="item in option.data"
+            :key="item"
+            :label="item"
+            :value="item"
+          />
+        </el-select>
+      </el-form-item>
+      <!-- <el-form-item label="年-月">
         <el-select v-model="form.year" multiple filterable placeholder="请选择日期">
           <el-option
             v-for="item in options.year"
@@ -91,48 +100,60 @@
             :value="item"
           />
         </el-select>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="onSubmit">查询</el-button>
       </el-form-item>
     </el-form>
     <div class="chartBox">
       <div class="chartContainerBlock">
-        <line-chart :chart-data="month" />
+        <line-chart v-if="month.data" :chart-data="month" />
       </div>
       <div class="chartContainerBlock">
-        <bar-chart :chart-data="total" class-name="totalChart" width="75%" title="餐饮满意率" />
+        <bar-chart v-if="total.data" :chart-data="total.data" class-name="totalChart" width="75%" :title="total.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="total_fc" bar-color="#F56C6C" title="两舱餐饮满意率" />
+        <bar-chart v-if="total_fc.data" :chart-data="total_fc.data" bar-color="#F56C6C" :title="total_fc.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="total_y" title="经济舱餐饮满意率" />
+        <bar-chart v-if="total_y.data" :chart-data="total_y.data" :title="total_y.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="foodCategoryFc" bar-color="#F56C6C" title="两舱餐别满意率" />
+        <DatasetBarChart v-if="foodCategoryFc.data" :chart-data="foodCategoryFc.data" bar-color="#F56C6C" :title="foodCategoryFc.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="food_category_y" title="经济舱餐别满意率" />
+        <DatasetBarChart v-if="food_category_y.data" :chart-data="food_category_y.data" :title="food_category_y.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="purpose" title="出行目的满意率" />
+        <DatasetBarChart v-if="purpose.data" :chart-data="purpose.data" :title="purpose.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="card" title="卡别满意率" />
+        <DatasetBarChart v-if="card.data" :chart-data="card.data" :title="card.name" />
       </div>
       <div class="chartContainer">
-        <bar-chart :chart-data="sex" title="性别满意率" />
+        <DatasetBarChart v-if="sex.data" :chart-data="sex.data" :title="sex.name" />
+      </div>
+      <div class="chartContainer">
+        <DatasetBarChart v-if="age.data" :chart-data="age.data" :title="age.name" />
+      </div>
+      <div class="chartContainerBlock">
+        <DatasetBarChart v-if="native.data" :chart-data="native.data" :title="native.name" />
       </div>
     </div>
-    <div class="tableTitle">旅客评论</div>
+    <div class="tableTitle">{{ lineTableTitle }}</div>
+    <infiniteTable v-if="lineTableData&&lineTableData.list&&lineTableData.list.length>0" main-height="500px" :main-data="lineTableData" />
+
+    <div class="tableTitle">{{ tableTitle }}</div>
     <infiniteTable v-if="tableData&&tableData.list&&tableData.list.length>0" main-height="500px" :main-data="tableData" />
+
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 import BarChart from './BarChart'
+import DatasetBarChart from './DatasetBarChart'
+
 import LineChart from './LineChart'
 import { getList, getOptions } from '@/api/main'
 import infiniteTable from './infiniteTable'
@@ -141,10 +162,14 @@ export default {
   components: {
     BarChart,
     LineChart,
+    DatasetBarChart,
     infiniteTable
   },
   data() {
     return {
+      lineTableTitle: '',
+      lineTableData: {},
+      tableTitle: '',
       tableData: {},
       allData: {},
       month: {},
@@ -154,6 +179,8 @@ export default {
       purpose: {},
       sex: {},
       card: {},
+      age: {},
+      native: {},
       foodCategoryFc: {},
       food_category_y: {},
       lineChartData: {
@@ -171,17 +198,7 @@ export default {
         airline: '',
         agent: ''
       },
-      options: {
-        agent: [],
-        airline: [],
-        area: [],
-        arilinecategory: [],
-        arrive: [],
-        day: [],
-        depart: [],
-        month: [],
-        year: []
-      },
+      options: [],
       areaOptions: [
         { value: 'us', label: '美洲' },
         { value: 'as', label: '亚洲' }
@@ -216,14 +233,16 @@ export default {
     getOptions() {
       getOptions().then(res => {
         this.options = res
-        this.form.year = [this.options.year[0]]
+        const data = this.options.filter(data => data.id === 'month')[0]
+        console.log(data)
+        this.form.month = [data.data[0]]
+        // this.form.year = [this.options.year[0]]
         this.onSubmit()
         console.log(res)
       })
     },
     getList(data) {
       getList(data).then(res => {
-        console.log('list::::::::::::::::::::::::::::', res)
         this.allData = res
         this.month = this.allData.month || []
         this.total = this.allData.total
@@ -234,8 +253,14 @@ export default {
         this.purpose = this.allData.purpose
         this.card = this.allData.card
         this.sex = this.allData.sex
+        this.age = this.allData.age
+        this.native = this.allData.native
         this.tableData = {}
-        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData.opinion)))
+        this.tableTitle = this.allData.opinion.name
+        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData.opinion.data)))
+        this.lineTableData = {}
+        this.lineTableTitle = this.allData.line.name
+        this.$set(this.lineTableData, 'list', JSON.parse(JSON.stringify(this.allData.line.data)))
       })
     },
     onSubmit() {

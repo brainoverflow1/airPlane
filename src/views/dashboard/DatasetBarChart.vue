@@ -7,7 +7,12 @@ import echarts from 'echarts'
 require('echarts/theme/macarons') // echarts theme
 
 export default {
+
   props: {
+    barColor: {
+      type: String,
+      default: '#509FEF'
+    },
     className: {
       type: String,
       default: 'chart'
@@ -20,9 +25,9 @@ export default {
       type: String,
       default: '400px'
     },
-    autoResize: {
-      type: Boolean,
-      default: true
+    title: {
+      type: String,
+      default: ''
     },
     chartData: {
       type: Object,
@@ -31,15 +36,14 @@ export default {
   },
   data() {
     return {
-      chart: null,
-      title: ''
+      chart: null
     }
   },
   watch: {
     chartData: {
       deep: true,
       handler(val) {
-        this.setOptions(val.data)
+        this.setOptions(val)
       }
     }
   },
@@ -58,27 +62,30 @@ export default {
   methods: {
     initChart() {
       this.chart = echarts.init(this.$el, 'macarons')
-      this.title = this.chartData.name
-      this.chartData.data && this.setOptions(this.chartData.data)
+      this.setOptions(this.chartData)
     },
     setOptions(data) {
       const xAxisData = []
       const series = []
       const legendData = Object.keys(data)
-      console.log('params::::::::::::::::data', data)
       for (const key in Object.values(data)[0]) {
         xAxisData.push(key)
       }
       for (const category in data) {
+        if (category === '样本量' || category === '占比') {
+          continue
+        }
         const categorySeriesData = []
         const categoryVal = data[category]
+
         for (const key in categoryVal) {
-          categorySeriesData.push({ sampleSize: categoryVal[key].sample_size, value: categoryVal[key].score })
+          categorySeriesData.push({ sampleSize: data['样本量'][key], proportion: data['占比'] ? data['占比'][key] : '', value: categoryVal[key] })
         }
+
         const categoryData = {
           name: category,
           smooth: false,
-          type: 'line',
+          type: 'bar',
           label: {
             show: true,
             position: 'top'
@@ -112,7 +119,7 @@ export default {
         },
         xAxis: {
           data: xAxisData.reverse(),
-          boundaryGap: false,
+          boundaryGap: ['15px', '15px'],
           axisTick: {
             show: false
           }
@@ -149,7 +156,9 @@ export default {
             for (const x in params) {
               data += `${params[x].seriesName}：
                满意率：${params[x].data.value};
-               样本量：${params[x].data.sampleSize} \n `
+               样本量：${params[x].data.sampleSize};
+               ${params[x].data.proportion && '占比：' + params[x].data.proportion}
+                `
               data += ' <br/> '
             }
             return data

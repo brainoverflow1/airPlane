@@ -68,6 +68,18 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/catering',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        name: 'Catering',
+        component: () => import('@/views/catering/index'),
+        meta: { title: '配餐公司评价', icon: 'table' }
+      }
+    ]
+  },
+  {
     path: '/table',
     component: Layout,
     children: [

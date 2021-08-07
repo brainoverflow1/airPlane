@@ -42,3 +42,17 @@ export function getThirdOptions(params) {
     params
   })
 }
+export function getCateringList(params) {
+  return request({
+    url: '/catering_estimate',
+    method: 'get',
+    params
+  })
+}
+export function getCateringOptions(params) {
+  return request({
+    url: '/catering_estimate_fields',
+    method: 'get',
+    params
+  })
+}

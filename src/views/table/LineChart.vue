@@ -24,22 +24,27 @@ export default {
       type: Boolean,
       default: true
     },
+    title: {
+      type: String,
+      default: '好评率变化趋势'
+    },
     chartData: {
       type: Object,
-      required: true
+      default() {
+        return {}
+      }
     }
   },
   data() {
     return {
-      chart: null,
-      title: ''
+      chart: null
     }
   },
   watch: {
     chartData: {
       deep: true,
       handler(val) {
-        this.setOptions(val.data)
+        this.setOptions(val)
       }
     }
   },
@@ -58,57 +63,20 @@ export default {
   methods: {
     initChart() {
       this.chart = echarts.init(this.$el, 'macarons')
-      this.title = this.chartData.name
-      this.chartData.data && this.setOptions(this.chartData.data)
+      this.setOptions(this.chartData)
     },
     setOptions(data) {
       const xAxisData = []
-      const series = []
-      const legendData = Object.keys(data)
-      console.log('params::::::::::::::::data', data)
-      for (const key in Object.values(data)[0]) {
+      const seriesData = []
+      for (const key in data) {
         xAxisData.push(key)
-      }
-      for (const category in data) {
-        const categorySeriesData = []
-        const categoryVal = data[category]
-        for (const key in categoryVal) {
-          categorySeriesData.push({ sampleSize: categoryVal[key].sample_size, value: categoryVal[key].score })
-        }
-        const categoryData = {
-          name: category,
-          smooth: false,
-          type: 'line',
-          label: {
-            show: true,
-            position: 'top'
-          },
-          itemStyle: {
-            normal: {
-              // color: '#3888fa',
-              lineStyle: {
-                // color: '#3888fa',
-                width: 2
-              },
-              areaStyle: {
-                color: '#f3f8ff'
-              }
-            }
-          },
-          data: categorySeriesData.reverse(),
-          animationDuration: 2800,
-          animationEasing: 'quadraticOut'
-        }
-        series.push(categoryData)
+        seriesData.push({ sampleSize: data[key].sample_size, value: data[key].score })
       }
       this.chart.setOption({
         title: {
           left: 'center',
           bottom: 0,
           text: this.title
-        },
-        legend: {
-          data: legendData
         },
         xAxis: {
           data: xAxisData.reverse(),
@@ -144,15 +112,11 @@ export default {
             type: 'cross'
           },
           formatter(params) {
-            console.log('params::::::::::::::::', params)
-            let data = ``
             for (const x in params) {
-              data += `${params[x].seriesName}：
-               满意率：${params[x].data.value};
-               样本量：${params[x].data.sampleSize} \n `
-              data += ' <br/> '
+              return `${params[x].name}：
+               满意度：${params[x].data.value};\n
+               样本量：${params[x].data.sampleSize}`
             }
-            return data
           },
           padding: [5, 10]
         },
@@ -164,7 +128,31 @@ export default {
             show: false
           }
         }],
-        series: series
+        series: [
+          {
+            name: '满意度',
+            smooth: false,
+            type: 'line',
+            label: {
+              show: true,
+              position: 'top'
+            },
+            itemStyle: {
+              normal: {
+                color: '#3888fa',
+                lineStyle: {
+                  color: '#3888fa',
+                  width: 2
+                },
+                areaStyle: {
+                  color: '#f3f8ff'
+                }
+              }
+            },
+            data: seriesData.reverse(),
+            animationDuration: 2800,
+            animationEasing: 'quadraticOut'
+          }]
       })
     }
   }

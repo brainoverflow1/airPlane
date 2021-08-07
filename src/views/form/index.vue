@@ -1,8 +1,17 @@
 <template>
   <div class="dashboard-container">
     <el-form :inline="true" :model="form" class="demo-form-inline">
-
-      <el-form-item label="年">
+      <el-form-item v-for="option in options" :key="option.id" :label="option.name">
+        <el-select v-model="form[option.id]" :clearable="true" multiple filterable :placeholder="option.placeholder">
+          <el-option
+            v-for="item in option.data"
+            :key="item"
+            :label="item"
+            :value="item"
+          />
+        </el-select>
+      </el-form-item>
+      <!-- <el-form-item label="年">
         <el-select v-model="form.year" multiple filterable placeholder="请选择日期">
           <el-option
             v-for="item in options.year"
@@ -101,7 +110,7 @@
             :value="item"
           />
         </el-select>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="onSubmit">查询</el-button>
       </el-form-item>
@@ -136,8 +145,11 @@
       </div>
 
     </div>
-    <div class="tableTitle">旅客评论</div>
-    <infiniteTable v-if="tableData&&tableData.list&&tableData.list.length>0" ref="infiniteTable" main-height="500px" :main-data="tableData" />
+    <div class="tableTitle">{{ lineTableTitle }}</div>
+    <infiniteTable v-if="lineTableData&&lineTableData.list&&lineTableData.list.length>0" ref="infiniteTable" main-height="500px" :main-data="lineTableData" />
+    <div class="tableTitle">{{ commentTableTitle }}</div>
+    <infiniteTable v-if="commentTableData&&commentTableData.list&&commentTableData.list.length>0" ref="infiniteTable" main-height="500px" :main-data="commentTableData" />
+
   </div>
 </template>
 
@@ -159,7 +171,10 @@ export default {
   data() {
     return {
       stackData: {},
-      tableData: {},
+      commentTableData: {},
+      commentTableTitle: '',
+      lineTableData: {},
+      lineTableTitle: '',
       allData: {},
       month: {},
       total: {},
@@ -232,7 +247,10 @@ export default {
     getOptions() {
       getOcssOptions().then(res => {
         this.options = res
-        this.form.year = [this.options.year[0]]
+        const data = this.options.filter(data => data.id === 'month')[0]
+        console.log(data)
+        this.form.month = [data.data[0]]
+        // this.form.year = [this.options.year[0]]
         this.onSubmit()
         console.log(res)
       })
@@ -245,9 +263,12 @@ export default {
           '经济舱': this.allData.o_ytotal,
           '两舱': this.allData.o_fctotal
         }
-        this.tableData = {}
-
-        this.$set(this.tableData, 'list', JSON.parse(JSON.stringify(this.allData.o_comment)))
+        this.lineTableData = {}
+        this.lineTableTitle = this.allData.o_line.name
+        this.$set(this.lineTableData, 'list', JSON.parse(JSON.stringify(this.allData.o_line.data)))
+        this.commentTableData = {}
+        this.commentTableTitle = this.allData.o_comment.name
+        this.$set(this.commentTableData, 'list', JSON.parse(JSON.stringify(this.allData.o_comment.data)))
         // this.tableData = { list: this.allData.o_comment }
       })
     },
